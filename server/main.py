@@ -1,11 +1,13 @@
 from fastapi import FastAPI,Depends,UploadFile,File
 from fastapi.responses import StreamingResponse
+
 from agent.graph_builder import builder
 import shutil
 import tempfile
 
 from server.type import ChatRequest,ChatResponse,HistoryResponse,TranscriptionResponse
 from server.utils import get_answer,stream_app_output,transcript
+from server.constant import ALLOWED_AUDIO_TYPES,MAX_FILE_SIZE
 from contextlib import asynccontextmanager
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from server.db import get_pool
@@ -102,20 +104,36 @@ async def get_history(thread_id: str ,pool = Depends(get_pool)):
 
 @app.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(file: UploadFile = File(...)):
-    # 1. Create a named temporary file
-    # We use 'delete=True' so it vanishes once the block closes
+    if  file.content_type not in ALLOWED_AUDIO_TYPES:
+        return TranscriptionResponse(
+            success=False,
+            error=f"Invalid file type: {file.content_type}."
+        )
+    if file.size > MAX_FILE_SIZE:
+        return TranscriptionResponse(
+            success=False,
+            error=f"File too large ({file.size} bytes). Maximum allowed is 3 MB."
+        )
+    if file.size ==0 :
+        return TranscriptionResponse(
+            success=False,
+            error=f"File is empty."
+        )
     with tempfile.NamedTemporaryFile(delete=True, suffix=f"_{file.filename}") as temp_file:
-        # 2. Efficiently stream the uploaded content into the temp file
-        shutil.copyfileobj(file.file, temp_file)
-        print(temp_file)
-        
-        # 3. Reset the temp file pointer to the beginning before reading
+       
+        shutil.copyfileobj( file.file, temp_file)
+
         temp_file.seek(0)
         
-        # 4. Pass the actual file object to Groq
+        
         transcription = transcript(temp_file, file.filename)
 
     if transcription is None:
-        return TranscriptionResponse(error="Transcription failed.")
+        return TranscriptionResponse(success=False,error="Transcription failed.")
         
-    return TranscriptionResponse(transcription=transcription)
+    return TranscriptionResponse(success=True,transcription=transcription)
+
+
+if __name__ =="__main__":
+    import uvicorn
+    uvicorn.run(app,port=8000)
