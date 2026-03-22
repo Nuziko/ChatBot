@@ -2,7 +2,7 @@ langchain-core==1.2.16
 langchain==1.2.10
 langgraph==1.0.10 
 langgraph-checkpoint==4.0.1
-langgraph-checkpoint-sqlite==3.0.3
+langgraph-checkpoint-postgres
 langchain-groq==1.1.2
 langchain-tavily
 fastapi==0.134.0
