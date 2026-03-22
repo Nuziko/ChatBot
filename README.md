@@ -57,7 +57,7 @@ ai_medical_chatbot_server/
 5. **using nginx**:
    ```bash
    #install nginx
-   sudo apt intsall nginx
+   sudo apt install nginx
    # start nginx
    sudo nginx
    # remove default config
