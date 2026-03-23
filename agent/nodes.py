@@ -116,7 +116,7 @@ def summarize_node(state: MedicalState) -> dict:
     
     
 
-    summary_response = get_llm(model_name="openai/gpt-oss-120b", tools=[],tags=["summarize"],temperature=0.0,max_tokens=2048).invoke(
+    summary_response = get_llm(model_name="llama-3.1-8b-instant", tools=[],tags=["summarize"],temperature=0.0,max_tokens=2048).invoke(
         [SystemMessage(content=prompt)]
     )
     new_summary = summary_response.content

@@ -1,6 +1,5 @@
 from psycopg_pool import AsyncConnectionPool
 import os 
-import os 
 from dotenv import load_dotenv
 load_dotenv()
 

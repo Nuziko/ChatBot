@@ -5,7 +5,9 @@ from langchain_tavily import TavilySearch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+from langchain_core.runnables import RunnableConfig
 import os
+import requests
 load_dotenv()  
 
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
@@ -20,23 +22,44 @@ search_tool = TavilySearch(
 )
 
 @tool
-def get_patients_by_(searchTerm: str) :
-    """Return a list of patients matching the search term (name or birthdate)"""
-    results = []
-    # implement the logic to search for patients by name or birthdate and populate the results list
-
-    return json.dumps(results)
+def search_patient_by (searchTerm: str,config:RunnableConfig) -> str:
+    """Return a list of patients matching the search term .
+    The search term can be a patient first name , last name , full name, date of birth, telephone number, national identification number (NIN), or email address."""
+    searchTerm=searchTerm.strip().replace(" ","+")# to handle names with spaces and ensure the search term is URL-friendly for example "John Doe" becomes "John+Doe"
+    print(f"Searching for patients with term: {searchTerm}")
+    thread_id = config.get("configurable", {}).get("thread_id")
+    headers={
+     "x-service-api-key": os.getenv("CHATBOT_API_KEY"),
+     "x-user-id":str(thread_id)
+     }
+    try:
+        response = requests.get(f"{os.getenv('BACKEND_URL')}/patient/search?searchTerm={searchTerm}&&limit=3&&includeAll=\"true\"",headers=headers)
+        results = response.json()
+        return json.dumps(results)
+    except Exception as e:
+        print(f"Error searching for patients: {e}")
+        return json.dumps({"error": "An error occurred while searching for patients."})
+   
 
 
 
 @tool
-def get_patient_by_id(patient_id: str) -> str:
+def get_patient_by_id(patient_id: str,config:RunnableConfig) -> str:
     """
     Return a patient by id if exists, else return error message. Return all patient info as JSON string.
     """
-    # implement the logic to search for a patient by id and return the patient info as a JSON string
-
-    return json.dumps({"error": "PATIENT NOT FOUND"})
+    thread_id = config.get("configurable", {}).get("thread_id")
+    headers={
+     "x-service-api-key": os.getenv("CHATBOT_API_KEY"),
+     "x-user-id":str(thread_id)
+     }
+    try:
+        response = requests.get(f"{os.getenv('BACKEND_URL')}/patient/{patient_id}",headers=headers)
+        results = response.json()
+        return json.dumps(results)
+    except Exception as e:
+        print(f"Error fetching patient by ID: {e}")
+        return json.dumps({"error": "An error occurred while fetching patient information."})
 
 
 @tool 
@@ -58,6 +81,6 @@ def get_current_date_time() -> str:
     return datetime.now(ZoneInfo("Africa/Algiers")).ctime()
 
 
-TOOLS = [search_web, get_patient_by_id, get_patients_by_,get_current_date_time]
+TOOLS = [search_web, get_patient_by_id, search_patient_by ,get_current_date_time]
 
 NODE_TOOLS=[get_current_date_time]
