@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, RemoveMessage,ToolMessage
 from agent.state import MedicalState
-from agent.tools import TOOLS,search_web,get_patient_by_id,get_patients_by_,NODE_TOOLS
+from agent.tools import TOOLS,search_web,get_patient_by_id,search_patient_by,NODE_TOOLS
 from agent.utils import get_llm, build_system_prompt,build_summary_prompt
 from agent.prompts import REFUSAL_MESSAGES,GUARD_SYSTEM_PROMPT
 import json
@@ -144,7 +144,7 @@ def patient_lookup_node(state: MedicalState):
     
     tool_func={
         "get_patient_by_id":get_patient_by_id,
-        "get_patients_by_":get_patients_by_
+        "search_patient_by":search_patient_by
 
     }
     
@@ -180,7 +180,7 @@ def route_after_brain(state: MedicalState) :
         if tool_call_name == "search_web":
             
             return "additional web info"
-        elif tool_call_name in ["get_patient_by_id",'get_patients_by_']:
+        elif tool_call_name in ["get_patient_by_id",'search_patient_by']:
             
             return "patients info"
         
