@@ -31,11 +31,9 @@ def guard_node(state: MedicalState) -> dict:
    
     
     
-
-    safeguard_messages = [
-        SystemMessage(content=GUARD_SYSTEM_PROMPT),
-        HumanMessage(content=f"Classify this messages:\n\n{state['query']}"),
-    ]
+    messages=state["messages"][-5:] if len(state['messages'])>5 else state["messages"]
+    clean_messages =[m for m in messages if m.type in ['human', 'ai']]
+    safeguard_messages = [SystemMessage(content=GUARD_SYSTEM_PROMPT)] + clean_messages + [HumanMessage(content=f"""Classify the message based on the provided context:\n\n#message :{state['query']}""")]
 
     response = get_llm(model_name="openai/gpt-oss-safeguard-20b", tools=[],tags=["safety"],temperature=0.0).invoke(safeguard_messages)
     try:
@@ -72,10 +70,16 @@ def brain_node(state: MedicalState) -> dict:
     """
     system_prompt = build_system_prompt(state.get("summary", ""))
 
-    recent_messages = state["messages"][-HISTORY_MESSAGES_TO_KEEP:]  if len(state["messages"]) > HISTORY_MESSAGES_TO_KEEP else state["messages"]
+    messages_list = state["messages"]
+    if len(messages_list) > HISTORY_MESSAGES_TO_KEEP:
+        recent_messages = messages_list[-HISTORY_MESSAGES_TO_KEEP:]
+        while recent_messages and isinstance(recent_messages[0], ToolMessage):
+            recent_messages.pop(0)
+    else:
+        recent_messages = messages_list
     messages = [SystemMessage(content=system_prompt)] + recent_messages
 
-    response = get_llm(model_name="openai/gpt-oss-120b", tools=TOOLS,tags=["brain"],temperature=0.2).invoke(messages)
+    response = get_llm(model_name="openai/gpt-oss-120b", tools=TOOLS,temperature=0.2).invoke(messages)
 
     
     return {"messages": [response]}
@@ -100,7 +104,7 @@ def summarize_node(state: MedicalState) -> dict:
     existing_summary = state.get("summary", "")
 
     
-    messages_to_summarize = messages[-MESSAGES_TO_KEEP:-HISTORY_MESSAGES_TO_KEEP]  # Keep the most recent 5 messages in full to preserve context for the summary
+    messages_to_summarize = messages[-MESSAGES_TO_KEEP:-HISTORY_MESSAGES_TO_KEEP]  # Keep the most recent HISTORY_MESSAGES_TO_KEEP messages in full to preserve context for the summary
 
     past_conversation = "\n".join(
         f"{m.__class__.__name__}: {m.content}"
@@ -116,7 +120,7 @@ def summarize_node(state: MedicalState) -> dict:
     
     
 
-    summary_response = get_llm(model_name="llama-3.1-8b-instant", tools=[],tags=["summarize"],temperature=0.0,max_tokens=2048).invoke(
+    summary_response = get_llm(model_name="llama-3.1-8b-instant", tools=[],temperature=0.0,max_tokens=2048).invoke(
         [SystemMessage(content=prompt)]
     )
     new_summary = summary_response.content
@@ -145,7 +149,6 @@ def patient_lookup_node(state: MedicalState):
     tool_func={
         "get_patient_by_id":get_patient_by_id,
         "search_patient_by":search_patient_by
-
     }
     
     last_message = state["messages"][-1]
@@ -218,5 +221,3 @@ def answer_node(state: MedicalState) -> dict:
         return state
     last_message = state["messages"][-1]
     return {"answer": last_message.content}
-
-
