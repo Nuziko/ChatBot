@@ -2,11 +2,13 @@ langchain-core==1.2.16
 langchain==1.2.10
 langgraph==1.0.10 
 langgraph-checkpoint==4.0.1
-langgraph-checkpoint-postgres
+langgraph-checkpoint-postgres==3.0.5
 langchain-groq==1.1.2
-langchain-tavily
+langchain-tavily==0.2.17
 fastapi==0.134.0
 uvicorn==0.41.0
 rich==14.3.3
-dotenv==0.9.9
+python-dotenv==1.2.2
 python-multipart==0.0.22
+psycopg-binary== 3.3.3
+psycopg-pool==3.3.0

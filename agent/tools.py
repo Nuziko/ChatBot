@@ -25,7 +25,8 @@ search_tool = TavilySearch(
 def search_patient_by (searchTerm: str,config:RunnableConfig) -> str:
     """Return a list of patients matching the search term .
     The search term can be a patient first name , last name , full name, date of birth, telephone number, national identification number (NIN), or email address."""
-    searchTerm=searchTerm.strip().replace(" ","+")# to handle names with spaces and ensure the search term is URL-friendly for example "John Doe" becomes "John+Doe"
+    import urllib.parse
+    searchTerm = urllib.parse.quote_plus(searchTerm.strip())# to handle names with spaces and ensure the search term is URL-friendly for example "John Doe" becomes "John+Doe"
     print(f"Searching for patients with term: {searchTerm}")
     thread_id = config.get("configurable", {}).get("thread_id")
     headers={
